@@ -218,11 +218,25 @@ with st.sidebar:
 # Run A* Solver
 # ──────────────────────────────────────────────────────────────────────
 
-# Persist result in session state so it survives re-runs
+# Persist result and the params that produced it in session state
 if "result" not in st.session_state:
     st.session_state.result = None
+if "last_params" not in st.session_state:
+    st.session_state.last_params = None
 
-if run_search:
+# Build a fingerprint of the current configuration
+current_params = (start_node, goal_node, safety_lambda, num_nodes, connectivity, seed)
+
+# Determine if we need to (re-)run the solver:
+#  1. User clicked "Find Route", OR
+#  2. A previous result exists but the params have changed (e.g. lambda slider moved)
+params_changed = (
+    st.session_state.result is not None
+    and st.session_state.last_params != current_params
+)
+should_run = run_search or params_changed
+
+if should_run:
     if start_node == goal_node:
         st.error("⚠️ Start and Goal nodes must be different.")
     else:
@@ -230,6 +244,7 @@ if run_search:
         st.session_state.result = solver.solve(
             start_node, goal_node, safety_lambda
         )
+        st.session_state.last_params = current_params
 
 result = st.session_state.result
 
